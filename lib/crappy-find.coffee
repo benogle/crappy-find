@@ -3,9 +3,9 @@
 global.Platform = #window.Platform = @Platform =
   performMicrotaskCheckpoint: ->
 
-console.log require 'Node-bind/src/NodeBind'
-console.log require 'TemplateBinding/src/TemplateBinding'
-console.log require 'observe-js'
+require 'Node-bind/src/NodeBind'
+require 'TemplateBinding/src/TemplateBinding'
+require 'observe-js'
 
 module.exports =
   crappyFindView: null

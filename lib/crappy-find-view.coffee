@@ -2,27 +2,23 @@ fs = require 'fs'
 path = require 'path'
 
 class AtomElement extends HTMLElement
-  @tagName: null
   @register: ->
-    document.registerElement @tagName, prototype: @::
+    document.registerElement @::tagName, prototype: @::
 
+  tagName: null
+  templatePath: null
   createdCallback: ->
+    if @templatePath?
+      fs.readFile path.join(__dirname, @templatePath), (err, template) =>
+        @loadTemplate(template.toString())
+
   attachedCallback: ->
   detachedCallback: ->
-  # attributeChangedCallback(attrName, oldVal, newVal)
+  attributeChangedCallback: (attrName, oldVal, newVal) ->
 
   getModel: -> @model
-
-{CompositeDisposable, Emitter} = require 'atom'
-class CrappyFindElement extends HTMLElement
-  @tagName: 'crappy-find'
-  @register: ->
-    document.registerElement @tagName, prototype: @::
-
-  templatePath: path.join(__dirname, '../templates/crappy-find.html')
-  createdCallback: ->
-    fs.readFile @templatePath, (err, template) =>
-      @loadTemplate(template.toString())
+  setModel: (@model) ->
+    @setModelOnTemplate()
 
   loadTemplate: (template) ->
     @innerHTML = template
@@ -32,9 +28,9 @@ class CrappyFindElement extends HTMLElement
     firstChild = @childNodes[0]
     firstChild.model = @model if @model? and firstChild?.tagName is 'TEMPLATE'
 
-  getModel: -> @model
-  setModel: (@model) ->
-    @setModelOnTemplate()
+class CrappyFindElement extends AtomElement
+  tagName: 'crappy-find'
+  templatePath: '../templates/crappy-find.html'
 
 class CrappyFindModel
   salutations: [
