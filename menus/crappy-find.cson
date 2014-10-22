@@ -1,0 +1,16 @@
+# See https://atom.io/docs/latest/creating-a-package#menus for more details
+'context-menu':
+  '.overlayer':
+      'Enable crappy-find': 'crappy-find:toggle'
+
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'crappy-find'
+      'submenu': [
+        { 'label': 'Toggle', 'command': 'crappy-find:toggle' }
+      ]
+    ]
+  }
+]
