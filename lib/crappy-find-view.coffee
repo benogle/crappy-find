@@ -8,7 +8,7 @@ class ElementManager
     @templates = {}
 
   registerElement: (elementClass) ->
-    @importTemplate(elementClass::templatePath) if elementClass::templatePath?
+    @importTemplate(elementClass::tagName, elementClass::templatePath) if elementClass::templatePath?
     document.registerElement elementClass::tagName, prototype: elementClass::
 
   observeTemplateForElement: (element, callback) ->
@@ -20,18 +20,17 @@ class ElementManager
         subscription.dispose()
         callback(template.cloneNode(true))
 
-  importTemplate: (templatePath) ->
-    id = element.tagName
-    return if @templates[id]?
+  importTemplate: (templateId, templatePath) ->
+    return if @templates[templateId]?
 
     absolutePath = path.join(__dirname, templatePath)
     fs.readFile absolutePath, (err, templateContent) =>
       div = document.createElement('div') # yeah slop!
       div.innerHTML = templateContent.toString()
       template = div.querySelector('template')
-      template.id = id
+      template.id = templateId
       document.head.appendChild(template)
-      @templates[id] = template
+      @templates[templateId] = template
       @emitter.emit 'did-load-template', template
 
 atom.elements = new ElementManager
