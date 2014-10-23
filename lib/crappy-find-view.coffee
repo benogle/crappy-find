@@ -8,25 +8,62 @@ class AtomElement extends HTMLElement
   tagName: null
   templatePath: null
   createdCallback: ->
-    if @templatePath?
-      fs.readFile path.join(__dirname, @templatePath), (err, template) =>
-        @loadTemplate(template.toString())
+    @importTemplate(@templatePath) if @templatePath?
 
   attachedCallback: ->
   detachedCallback: ->
   attributeChangedCallback: (attrName, oldVal, newVal) ->
 
+  idify: (str) ->
+    str.replace(/[^a-zA-Z0-9]/g, '-')
+
+  importTemplate: (templatePath) ->
+    absolutePath = path.join(__dirname, templatePath)
+    id = @idify(absolutePath)
+    link = document.head.querySelector("##{id}")
+    if link?
+      @cloneTemplate(link)
+    else
+      fs.readFile absolutePath, (err, templateContent) =>
+        div = document.createElement('div') # yeah slop!
+        div.innerHTML = templateContent.toString()
+        template = div.querySelector('template')
+        template.id = id
+        document.head.appendChild(template)
+        @cloneTemplate(template)
+
+  # FIXME: the 'right' way to do the import. But it messes up char measurement.
+  # When you add the import to the docuemnt, it seems to hide everything just as
+  # the characters are being mesured, giving a 0 width for each char.
+  #
+  # importTemplate: (templatePath) ->
+  #   absolutePath = path.join(__dirname, templatePath)
+  #   id = @idify(absolutePath)
+  #   link = document.head.querySelector("##{id}")
+  #   if link?
+  #     @cloneTemplate(link.import)
+  #   else
+  #     link = document.createElement('link')
+  #     link.rel = 'import'
+  #     link.id = id
+  #     link.href = absolutePath
+  #     link.async = true
+  #     link.onload = (e) => @cloneTemplate(e.target.import)
+  #     document.head.appendChild(link)
+
   getModel: -> @model
   setModel: (@model) ->
     @setModelOnTemplate()
 
-  loadTemplate: (template) ->
-    @innerHTML = template
+  cloneTemplate: (templateRoot) ->
+    template = templateRoot.cloneNode(true)
+    @appendChild(template)
     @setModelOnTemplate()
 
   setModelOnTemplate: ->
-    firstChild = @childNodes[0]
-    firstChild.model = @model if @model? and firstChild?.tagName is 'TEMPLATE'
+    return unless @model?
+    return unless template = @querySelector('template')
+    template.model = @model
 
 class CrappyFindElement extends AtomElement
   tagName: 'crappy-find'
@@ -39,6 +76,7 @@ class CrappyFindModel
     { what: 'Hello', who: 'Declarative' },
     { what: 'GoodBye', who: 'Imperative' }
   ]
+  cats: 'ok'
 
   constructor: ->
 
