@@ -1,73 +1,41 @@
 fs = require 'fs'
 path = require 'path'
 
-class AtomElement extends HTMLElement
-  @register: ->
-    document.registerElement @::tagName, prototype: @::
+{Emitter} = require 'event-kit'
+class ElementManager
+  constructor: ->
+    @emitter = new Emitter
+    @templates = {}
 
-  tagName: null
-  templatePath: null
-  createdCallback: ->
-    @importTemplate(@templatePath) if @templatePath?
+  registerElement: (elementClass) ->
+    @importTemplate(elementClass::templatePath) if elementClass::templatePath?
+    document.registerElement elementClass::tagName, prototype: elementClass::
 
-  attachedCallback: ->
-  detachedCallback: ->
-  attributeChangedCallback: (attrName, oldVal, newVal) ->
-
-  idify: (str) ->
-    str.replace(/[^a-zA-Z0-9]/g, '-')
+  observeTemplateForElement: (element, callback) ->
+    id = element.tagName
+    if @templates[id]?
+      callback(@templates[id].cloneNode(true))
+    else
+      subscription = @emitter.on 'did-load-template', (template) ->
+        subscription.dispose()
+        callback(template.cloneNode(true))
 
   importTemplate: (templatePath) ->
+    id = element.tagName
+    return if @templates[id]?
+
     absolutePath = path.join(__dirname, templatePath)
-    id = @idify(absolutePath)
-    link = document.head.querySelector("##{id}")
-    if link?
-      @cloneTemplate(link)
-    else
-      fs.readFile absolutePath, (err, templateContent) =>
-        div = document.createElement('div') # yeah slop!
-        div.innerHTML = templateContent.toString()
-        template = div.querySelector('template')
-        template.id = id
-        document.head.appendChild(template)
-        @cloneTemplate(template)
+    fs.readFile absolutePath, (err, templateContent) =>
+      div = document.createElement('div') # yeah slop!
+      div.innerHTML = templateContent.toString()
+      template = div.querySelector('template')
+      template.id = id
+      document.head.appendChild(template)
+      @templates[id] = template
+      @emitter.emit 'did-load-template', template
 
-  # FIXME: the 'right' way to do the import. But it messes up char measurement.
-  # When you add the import to the docuemnt, it seems to hide everything just as
-  # the characters are being mesured, giving a 0 width for each char.
-  #
-  # importTemplate: (templatePath) ->
-  #   absolutePath = path.join(__dirname, templatePath)
-  #   id = @idify(absolutePath)
-  #   link = document.head.querySelector("##{id}")
-  #   if link?
-  #     @cloneTemplate(link.import)
-  #   else
-  #     link = document.createElement('link')
-  #     link.rel = 'import'
-  #     link.id = id
-  #     link.href = absolutePath
-  #     link.async = true
-  #     link.onload = (e) => @cloneTemplate(e.target.import)
-  #     document.head.appendChild(link)
+atom.elements = new ElementManager
 
-  getModel: -> @model
-  setModel: (@model) ->
-    @setModelOnTemplate()
-
-  cloneTemplate: (templateRoot) ->
-    template = templateRoot.cloneNode(true)
-    @appendChild(template)
-    @setModelOnTemplate()
-
-  setModelOnTemplate: ->
-    return unless @model?
-    return unless template = @querySelector('template')
-    template.model = @model
-
-class CrappyFindElement extends AtomElement
-  tagName: 'crappy-find'
-  templatePath: '../templates/crappy-find.html'
 
 class CrappyFindModel
   salutations: [
@@ -77,8 +45,25 @@ class CrappyFindModel
     { what: 'GoodBye', who: 'Imperative' }
   ]
   cats: 'ok'
-
   constructor: ->
 
-CrappyFindElement = CrappyFindElement.register()
+class CrappyFindElement extends HTMLElement
+  tagName: 'crappy-find'
+  templatePath: '../templates/crappy-find.html'
+
+  createdCallback: ->
+    console.log 'created!'
+  attachedCallback: ->
+    console.log 'attached!'
+  detachedCallback: ->
+    console.log 'detached!'
+
+  getModel: -> @model
+  setModel: (@model) ->
+    atom.elements.observeTemplateForElement this, (template) =>
+      @appendChild(template)
+      template.model = @model
+
+CrappyFindElement = atom.elements.registerElement(CrappyFindElement)
+
 module.exports = {CrappyFindModel, CrappyFindElement}
