@@ -1,40 +1,21 @@
 fs = require 'fs'
 path = require 'path'
 
-{Emitter} = require 'event-kit'
-class ElementManager
-  constructor: ->
-    @emitter = new Emitter
-    @templates = {}
+require.extensions['.html'] = (module, filePath) ->
+  html = fs.readFileSync(filePath, 'utf8')
+  tempDiv = document.createElement('div')
+  tempDiv.innerHTML = html
 
-  registerElement: (elementClass) ->
-    @importTemplate(elementClass::tagName, elementClass::templatePath) if elementClass::templatePath?
-    document.registerElement elementClass::tagName, prototype: elementClass::
+  docFragment = document.createDocumentFragment()
+  docFragment.appendChild(node) for node in Array::slice.call(tempDiv.childNodes, 0)
+  module.exports = docFragment
 
-  observeTemplateForElement: (element, callback) ->
-    id = element.tagName
-    if @templates[id]?
-      callback(@templates[id].cloneNode(true))
-    else
-      subscription = @emitter.on 'did-load-template', (template) ->
-        subscription.dispose()
-        callback(template.cloneNode(true))
-
-  importTemplate: (templateId, templatePath) ->
-    return if @templates[templateId]?
-
-    absolutePath = path.join(__dirname, templatePath)
-    fs.readFile absolutePath, (err, templateContent) =>
-      div = document.createElement('div') # yeah slop!
-      div.innerHTML = templateContent.toString()
-      template = div.querySelector('template')
-      template.id = templateId
-      document.head.appendChild(template)
-      @templates[templateId] = template
-      @emitter.emit 'did-load-template', template
-
-atom.elements = new ElementManager
-
+registerElement = (elementName, elementPrototype) ->
+  classToExtend = elementPrototype.extends ? HTMLElement
+  prototype = Object.create(classToExtend.prototype)
+  for key, value of elementPrototype
+    prototype[key] = value if elementPrototype.hasOwnProperty(key)
+  document.registerElement(elementName, {prototype})
 
 class CrappyFindModel
   salutations: [
@@ -46,23 +27,15 @@ class CrappyFindModel
   cats: 'ok'
   constructor: ->
 
-class CrappyFindElement extends HTMLElement
-  tagName: 'crappy-find'
-  templatePath: '../templates/crappy-find.html'
-
+Content = require('../templates/crappy-find.html')
+CrappyFindElement = registerElement 'crappy-find',
   createdCallback: ->
-    console.log 'created!'
-  attachedCallback: ->
-    console.log 'attached!'
-  detachedCallback: ->
-    console.log 'detached!'
+    @rootTemplate = Content.querySelector('template')
+    @appendChild(@rootTemplate)
 
   getModel: -> @model
   setModel: (@model) ->
-    atom.elements.observeTemplateForElement this, (template) =>
-      @appendChild(template)
-      template.model = @model
+    @rootTemplate?.model = @model
 
-CrappyFindElement = atom.elements.registerElement(CrappyFindElement)
-
+console.log CrappyFindElement
 module.exports = {CrappyFindModel, CrappyFindElement}
