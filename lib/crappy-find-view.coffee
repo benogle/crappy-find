@@ -30,7 +30,7 @@ class CrappyFindModel
 Content = require('../templates/crappy-find.html')
 CrappyFindElement = registerElement 'crappy-find',
   createdCallback: ->
-    @rootTemplate = Content.querySelector('template')
+    @rootTemplate = Content.querySelector('template').cloneNode(true)
     @appendChild(@rootTemplate)
 
   getModel: -> @model
