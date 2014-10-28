@@ -1,7 +1,7 @@
 <template bind="{{}}">
-  <div>{{cats}}</div>
-  <img src="atom://crappy-find/lib/images/tiny.png"/>
-  <template repeat="{{ salutations }}">
-    <li>{{ what }}: <input type="text" value="{{ who }}"></li>
-  </template>
+  <div>{{message}}</div>
+  <div>
+    <atom-text-editor mini></atom-text-editor>
+    <button class="btn">Search</button>
+  </div>
 </template>

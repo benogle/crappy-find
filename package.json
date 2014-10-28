@@ -9,8 +9,7 @@
     "atom": ">0.50.0"
   },
   "dependencies": {
-    "templatebinding": "git://github.com/Polymer/TemplateBinding.git#0.4.2",
-    "observe-js": "git://github.com/Polymer/observe-js.git#0.4.2",
-    "node-bind": "git://github.com/Polymer/NodeBind.git#0.4.2"
+    "event-kit": "*",
+    "elmer": "^0.0"
   }
 }
